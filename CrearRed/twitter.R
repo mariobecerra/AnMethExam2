@@ -19,6 +19,37 @@ setup_twitter_oauth('GPI5CNx6tabl6J1M24lQJmCkU', 'YxmKTz1t4uLWSQDKu1h3p0l1g6zSf6
 users_c <- read.csv('users_prueba.csv', colClasses = c('factor', 'character'))
 users <- users_c[1:2,]
 
+############################################################
+
+#Usuarios "seilla", o sea, los usuarios iniciales
+users_seed <- users_c[1:2,] 
+
+#Para cada uno de los usuarios en users_seed, en followers1 se genera una lista donde se contienen los followers; igual con followees
+followers1 <- mclapply(users_seed$id, function(i) {getUser(i)$getFollowerIDs()}, mc.cores=nc)
+names(followers1) <- users_seed$id
+followees1 <- mclapply(users_seed$id, function(i) {getUser(i)$getFriendIDs()}, mc.cores=nc)
+names(followees1) <- users_seed$id
+
+temp <- unique(c(unlist(followees1), unlist(followers1))) #followers y sollowees únicos
+new_ids <- setdiff(temp, users_seed$id) #todos los usuarios distintos de los usuarios semilla
+new_ids <- new_ids[1:2]
+
+followers <- followers1 #lista donde se van a guardar todos los followers
+followees <- followees1 #lista donde se van a guardar todos los followees
+k=0
+while(k<3) {
+  k=k+1
+  followers2 <- mclapply(new_ids, function(i) {getUser(i)$getFollowerIDs()}, mc.cores=nc)
+  names(followers2) <- new_ids
+  followees2 <- mclapply(new_ids, function(i) {getUser(i)$getFriendIDs()}, mc.cores=nc)
+  names(followees2) <- new_ids
+  followers <- append(followers, followers2)
+  followees <- append(followees, followees2)
+  temp <- unique(c(unlist(followees), unlist(followers)))
+  new_ids <- setdiff(temp, users_seed$id)
+  #new_ids <- new_ids[1:2]
+}
+
 #############################################################
 
 
