@@ -14,9 +14,9 @@ users <- read.csv('users_prueba.csv', colClasses = c('factor', 'character'))
 
 
 #Usuarios "semilla", o sea, los usuarios iniciales
-users <- users[3:4,] 
+users <- users[1:2,] 
 
-ids <- split(users$id, factor(users$id))
+ids <- users$id
 
 followers <- list() #lista donde se van a guardar todos los followers
 followees <- list() #lista donde se van a guardar todos los followees
