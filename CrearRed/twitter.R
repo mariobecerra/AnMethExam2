@@ -8,39 +8,111 @@ nc=getOption("mc.cores", 2L)
 setup_twitter_oauth('GPI5CNx6tabl6J1M24lQJmCkU', 'YxmKTz1t4uLWSQDKu1h3p0l1g6zSf6PWLPVaAn1ppao23a8ZDY', '86753315-rldhPYu5C17xEzoVMADKNyefqgw1teg0VduH14TVi','Db9volDQ7i0VEjJ85hMHqTQ9nIL1o2w37OJkjAcG1khHz')
 2
 
-users <- read.csv('users_prueba.csv', colClasses = c('factor', 'character'))
+users_seed <- read.csv('users_prueba.csv', colClasses = c('factor', 'character'))
 
 ############################################################
 
 
 #Usuarios "semilla", o sea, los usuarios iniciales
-users <- users[1:2,] 
+users <- users_seed[1:2,] 
 
 ids <- users$id
 
-followers <- list() #lista donde se van a guardar todos los followers
-followees <- list() #lista donde se van a guardar todos los followees
-k=0
+usersfol <- list(list(), list())
+names(usersfol) <- c('followers', 'following')
+
+k=1
 while(k<3) { 
   k=k+1
   print(k)
-  followers2 <- mclapply(ids, function(i) {
+  foltemp <- lapply(ids, function(i) {
+    print(paste('Followers de ',i))
     f <- getUser(i)$getFollowerIDs()
-    write.table(f, file=paste0('../Out/', paste(i,'followers.csv')), row.names=FALSE, col.names=FALSE)}, 
-    mc.cores=nc)
+    write.table(f, file=paste0('../Out/', paste(i,'followers.csv')), row.names=FALSE, col.names=FALSE)
+    
+    print(paste('Following de ',i))
+    g <- getUser(i)$getFriendIDs()
+    write.table(g, file=paste0('../Out/', paste(i,'following.csv')), row.names=FALSE, col.names=FALSE)
+    
+    f
+    g
+    
+    while(limitfollowers==0 | limitfollowing==0){
+      Sys.sleep(901)
+      getCurlRate <- getCurRateLimitInfo()
+      limitfollowers <- getCurlRate[52,3]
+      limitfollowing <- getCurlRate[32,3]
+    }
+    
+#     if(limitfollowers != 0){
+#       print(paste('Followers de ',i))
+#       f <- getUser(i)$getFollowerIDs()
+#       write.table(f, file=paste0('../Out/', paste(i,'followers.csv')), row.names=FALSE, col.names=FALSE)
+#     } else {
+#       if(limitfollowing !=0){
+#         print(paste('Following de ',i))
+#         g <- getUser(i)$getFriendIDs()
+#         write.table(g, file=paste0('../Out/', paste(i,'following.csv')), row.names=FALSE, col.names=FALSE)
+#       } else {
+#         Sys.sleep(901)
+#       }
+#     }
+#     f
+#     g
+  })
   names(followers2) <- ids
-  #followees2 <- mclapply(ids, function(i) {getUser(i)$getFriendIDs()}, mc.cores=nc)
-  followees2 <- mclapply(ids, function(i) {
+  followees2 <- lapply(ids, function(i) {
+    getCurRateLimitInfo()[32,3]
+    print(paste('Followees de ',i))
     f <- getUser(i)$getFriendIDs()
-    write.table(f, file=paste0('../Out/', paste(i,'followees.csv')), row.names=FALSE, col.names=FALSE)}, 
-    mc.cores=nc)
+    write.table(f, file=paste0('../Out/', paste(i,'followees.csv')), row.names=FALSE, col.names=FALSE)
+    f
+  })
   names(followees2) <- ids
   followers <- append(followers, followers2)
   followees <- append(followees, followees2)
   temp <- unique(c(unlist(followees), unlist(followers)))
   ids <- setdiff(temp, ids)
-  ids <- ids[1:2]
+  #ids <- ids[1:2]
 }
+
+##########################33
+
+followers <- list() #lista donde se van a guardar todos los followers
+followees <- list() #lista donde se van a guardar todos los followees
+
+tic<-Sys.time()
+
+k=1
+while(k<3) { 
+  k=k+1
+  print(k)
+  followers2 <- lapply(ids, function(i) {
+    limit <- getCurRateLimitInfo()[52,3]
+    print(paste('Followers de ',i))
+    f <- getUser(i)$getFollowerIDs()
+    write.table(f, file=paste0('../Out/', paste(i,'followers.csv')), row.names=FALSE, col.names=FALSE)
+    f
+  })
+  names(followers2) <- ids
+  followees2 <- lapply(ids, function(i) {
+    getCurRateLimitInfo()[32,3]
+    print(paste('Followees de ',i))
+    f <- getUser(i)$getFriendIDs()
+    write.table(f, file=paste0('../Out/', paste(i,'followees.csv')), row.names=FALSE, col.names=FALSE)
+    f
+  })
+  names(followees2) <- ids
+  followers <- append(followers, followers2)
+  followees <- append(followees, followees2)
+  temp <- unique(c(unlist(followees), unlist(followers)))
+  ids <- setdiff(temp, ids)
+  #ids <- ids[1:2]
+}
+
+toc<-Sys.time()
+time <- toc - tic
+print(time)
 
 #############################################################
 
