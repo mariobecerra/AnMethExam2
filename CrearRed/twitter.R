@@ -13,7 +13,7 @@ users <- read.csv('users_prueba.csv', colClasses = c('factor', 'character'))
 ############################################################
 
 
-#Usuarios "seilla", o sea, los usuarios iniciales
+#Usuarios "semilla", o sea, los usuarios iniciales
 users <- users[3:4,] 
 
 ids <- split(users$id, factor(users$id))
@@ -38,7 +38,7 @@ while(k<3) {
   followers <- append(followers, followers2)
   followees <- append(followees, followees2)
   temp <- unique(c(unlist(followees), unlist(followers)))
-  ids <- setdiff(temp, users_seed$id)
+  ids <- setdiff(temp, ids)
   ids <- ids[1:2]
 }
 
