@@ -1,0 +1,93 @@
+---
+title: "Análisis de red de Twitter"
+author: "Karen P"
+output: html_document
+---
+  
+Los datos de Twitter
+
+```{r}
+library(igraph)
+edges <- read.csv("14mayo/network_edges_Prueba-Medios.csv", header = TRUE, sep = ",")
+nodes <- read.csv("14mayo/network_nodes_Prueba-Medios.csv", header = TRUE, sep = ",", quote = "'")
+  
+```
+
+Calculo de Betweenness, Indegree, Outdegree, Totaldegree
+
+```{r}
+library(stringr)
+grafo <- data.frame(edges[,1], edges[,2])
+g <- graph.data.frame(grafo, directed=TRUE)
+
+
+betweennessG <- betweenness(g)
+indegreeG <- degree(g, mode="in")
+outdegreeG <- degree(g, mode="out")
+totaldegreeG <- degree(g)
+inclosenessG <- closeness(g, mode='in', weight = edges$weight)
+outclosenessG <- closeness(g, mode='out')
+totalclosenessG <- closeness(g)
+
+
+res <- data.frame(nodes$X.id, betweennessG, indegreeG, outdegreeG, totaldegreeG, inclosenessG,outclosenessG, totalclosenessG)
+write.table(res,file="nodosGraph.csv",sep=",")
+
+#ebc <- edge.betweenness.community(g, directed=T)
+#res2 <- data.frame(ebc)
+#write.table(res,file="aristasGraph.csv",sep=",")
+
+```
+
+Análisis de los parámetros calculados para los nodos.
+
+```{r}
+nodes_means <-colMeans(res)
+nodes_means
+nodes_min <- apply(res, 2, min)
+nodes_min
+nodes_max <- apply(res,2,max)
+nodes_max
+nodes_sd <- apply(res,2,sd)
+nodes_sd
+
+library(dplyr)
+alto_degree <- arrange(res, desc(degreeG))
+head(alto_degree)
+alto_indegree <- arrange(res, desc(indegreeG))
+head(alto_indegree)
+alto_outdegree <- arrange(res, desc(outdegreeG))
+head(alto_outdegree)
+
+```
+Factores de la centralidad de los nodos
+```{r}
+alto_betw <- arrange(res, desc(betweennessG))
+head(alto_betw)
+```
+Búsqueda de comunidades con el método greedy. Para utilizar este método es grafo debe ser no dirigido.
+
+```{r}
+g <- graph.data.frame(grafo, directed=FALSE)
+g <- simplify(g)
+comm <- fastgreedy.community(g, membership=TRUE, weights = edges$weight)
+#comm <- edge.betweenness.community(g, weights = edges$weight, directed=TRUE)
+
+#A que comunidad pertenece cada nodo
+membership(comm)
+
+#Tamaño de cada comunidad
+sizes(comm)
+
+#Miembros de las comunidades
+communities(comm)
+
+#plot(comm, g, colbar=rainbow(length(comm)))
+#dendPlot(comm)
+V(g)$comm_mod <- membership(comm)
+write.graph(g, file='grafo.gml', format = 'gml')
+```
+
+
+
+  
