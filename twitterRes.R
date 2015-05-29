@@ -1,0 +1,88 @@
+## ------------------------------------------------------------------------
+library(igraph)
+library(dplyr)
+edges <- read.csv("./Datos/14mayo/network_edges_Prueba-Medios.csv", header = TRUE, sep = ",")
+nodes <- read.csv("./Datos/14mayo/network_nodes_Prueba-Medios.csv", header = TRUE, sep = ",", quote = "'")
+f <- file('./redmedios.gml')
+gr <- read.graph(f, format = 'gml')
+  
+
+## ------------------------------------------------------------------------
+nodes2 <- nodes
+nodes2$id <- gsub("\"", "", nodes2$X.id.)
+nodes2$foll<- as.numeric(gsub("\"", "", nodes2$X.followers.))
+nodes2$friends <- as.numeric(gsub("\"", "", nodes2$X.friends.))
+nodes2$X.id. <- NULL
+nodes2$X.followers. <- NULL
+nodes2$X.friends. <- NULL
+arrange(nodes2, desc(foll)) %>% head(20)
+xtable(arrange(nodes2, desc(foll)) %>% head(8))
+
+## ------------------------------------------------------------------------
+grafo <- data.frame(edges[,1], edges[,2])
+g <- graph.data.frame(grafo, directed=TRUE)
+g <- simplify(g)
+
+betweennessG <- betweenness(g)
+indegreeG <- degree(g, mode="in")
+outdegreeG <- degree(g, mode="out")
+totaldegreeG <- degree(g)
+inclosenessG <- closeness(g, mode='in', weight = edges$weight)
+outclosenessG <- closeness(g, mode='out')
+totalclosenessG <- closeness(g)
+
+res <- data.frame(id = V(g)$name, betweennessG, indegreeG, outdegreeG, totaldegreeG, inclosenessG,outclosenessG, totalclosenessG)
+write.table(res,file="nodosGraph.csv",sep=",")
+arrange(res, desc(indegreeG)) %>% head
+arrange(res, desc(outdegreeG)) %>% head
+
+#Faltan estadísticas de pesos
+
+#ebc <- edge.betweenness.community(g, directed=T)
+#res2 <- data.frame(ebc)
+#write.table(res,file="aristasGraph.csv",sep=",")
+
+
+## ------------------------------------------------------------------------
+nodes_means <-colMeans(res)
+nodes_means
+nodes_min <- apply(res, 2, min)
+nodes_min
+nodes_max <- apply(res,2,max)
+nodes_max
+nodes_sd <- apply(res,2,sd)
+nodes_sd
+
+alto_degree <- arrange(res, desc(degreeG))
+head(alto_degree)
+alto_indegree <- arrange(res, desc(indegreeG))
+head(alto_indegree)
+alto_outdegree <- arrange(res, desc(outdegreeG))
+head(alto_outdegree)
+
+
+## ------------------------------------------------------------------------
+alto_betw <- arrange(res, desc(betweennessG))
+head(alto_betw)
+
+## ------------------------------------------------------------------------
+g_un <- graph.data.frame(grafo, directed=FALSE)
+g_un_s <- simplify(g_un)
+comm <- fastgreedy.community(g_un_s, membership=TRUE, weights = edges$weight)
+#comm <- edge.betweenness.community(g, weights = edges$weight, directed=TRUE)
+
+#A que comunidad pertenece cada nodo
+membership(comm)
+
+#Tamaño de cada comunidad
+sizes(comm)
+
+#Miembros de las comunidades
+communities(comm)
+res2 <- data.frame(res, com_mod=comm$membership)
+write.table(res2,file="nodosGraph2.csv",sep=",", row.names=F)
+#plot(comm, g, colbar=rainbow(length(comm)))
+#dendPlot(comm)
+V(g)$comm_mod <- membership(comm)
+write.graph(g, file = './grafo2.graphml', format='graphml')
+
